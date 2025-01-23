@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+F:/esp-workspace/esp32_display_spi_dma/build/CMakeFiles/bootloader
+F:/esp-workspace/esp32_display_spi_dma/build/CMakeFiles/bootloader.rule
+F:/esp-workspace/esp32_display_spi_dma/build/CMakeFiles/bootloader-complete.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+F:/esp-workspace/esp32_display_spi_dma/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
