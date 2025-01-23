@@ -32,3 +32,4 @@ Open main.c and define connection settings. Select display module (st7789, ili93
 * https://dzen.ru/vadrov
 * https://vk.com/vadrov
 * https://t.me/vadrov_channel
+* Donate: [donate.yoomoney](https://yoomoney.ru/to/4100117522443917)
