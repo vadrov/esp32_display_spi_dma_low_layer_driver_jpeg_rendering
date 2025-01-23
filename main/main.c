@@ -2,7 +2,7 @@
  *  Author: VadRov
  *  Copyright (C) 2019-2024, VadRov, all right reserved.
  *
- *  ESP32 Low-level driver for spi displays (esp-idf-v5.1.2)
+ *  ESP32 low layer driver for spi displays (esp-idf-v5.1.2)
  *  Optimized JPEG decoder.
  *  Demonstration of line-by-line graphics rendering running on two cpu cores.
  *
@@ -87,7 +87,7 @@ typedef struct {
 	uint16_t *data;
 } render_parameters;
 
-render_parameters render1_par = {0}, render2_par = {0};
+render_parameters render1_par, render2_par;
 SemaphoreHandle_t renderSemaphore;
 
 static void Render_task(void *param)
@@ -98,8 +98,6 @@ static void Render_task(void *param)
 	vTaskDelete(NULL);
 }
 #endif
-
-SemaphoreHandle_t jpegSemaphore;
 
 static void Render2D (LCD_Handler *lcd, MGL_OBJ *obj, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, int x_c, int y_c)
 {

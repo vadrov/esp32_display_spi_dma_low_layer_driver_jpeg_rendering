@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "esp32_display_spi_dma",
-    "project_version":    "1",
+    "project_version":    "9cc557d-dirty",
     "project_path":       "F:/esp-workspace/esp32_display_spi_dma",
     "idf_path":           "F:/Espressif/frameworks/esp-idf-v5.1.2",
     "build_dir":          "F:/esp-workspace/esp32_display_spi_dma/build",
