@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2024, VadRov, all right reserved.
+*Copyright (C) 2019-2024, VadRov, all right reserved.*
  
 * ESP32 Low-level driver for spi displays (esp-idf-v5.1.2)
 * Optimized JPEG decoder.
@@ -24,7 +24,7 @@ Open main.c and define connection settings. Select display module (st7789, ili93
 #define RENDER_USE_TWO_CORES 		//Use two esp32 cores for graphics rendering.
 					//Comment out if using one core.
 ```
- https://www.youtube.com/@VadRov
- https://dzen.ru/vadrov
- https://vk.com/vadrov
- https://t.me/vadrov_channel
+* https://www.youtube.com/@VadRov
+* https://dzen.ru/vadrov
+* https://vk.com/vadrov
+* https://t.me/vadrov_channel
