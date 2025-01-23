@@ -1,10 +1,10 @@
- #Copyright (C) 2019-2024, VadRov, all right reserved.
+# Copyright (C) 2019-2024, VadRov, all right reserved.
  
- - ESP32 Low-level driver for spi displays (esp-idf-v5.1.2)
- - Optimized JPEG decoder.
- - Demonstration of line-by-line graphics rendering running on two cpu cores.
+* ESP32 Low-level driver for spi displays (esp-idf-v5.1.2)
+* Optimized JPEG decoder.
+* Demonstration of line-by-line graphics rendering running on two cpu cores.
 
-#How to use?
+# How to use?
 Open main.c and define connection settings. Select display module (st7789, ili9341). Select the number of cores to demonstrate the operation of graphic line rendering.
  ```c
 //--------------------------------------------- User defines ---------------------------------------------
