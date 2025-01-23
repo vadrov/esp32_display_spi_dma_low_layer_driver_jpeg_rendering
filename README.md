@@ -24,6 +24,12 @@ Open main.c and define connection settings. Select display module (st7789, ili93
 #define RENDER_USE_TWO_CORES 		//Use two esp32 cores for graphics rendering.
 					//Comment out if using one core.
 ```
+#Rendering
+![Image](https://github.com/user-attachments/assets/a1d1e251-addf-43d6-b90f-d268907fe3f1)
+
+#Video
+[![Watch the video](https://img.youtube.com/vi/yXXlYOSYgoo/maxresdefault.jpg)](https://youtu.be/yXXlYOSYgoo)
+
 * https://www.youtube.com/@VadRov
 * https://dzen.ru/vadrov
 * https://vk.com/vadrov
