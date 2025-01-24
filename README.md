@@ -18,11 +18,11 @@ Open main.c and define connection settings. Select display module (st7789, ili93
 
 #define ACT_DISPLAY		ST7789  //ST7789 or ILI9341
 #define HI_SPEED			//if uncommented f_clk spi = 80 MHz, else 40 MHz
-//--------------------------------------------------------------------------------------------------------
-```
-```c
+
 #define RENDER_USE_TWO_CORES 		//Use two esp32 cores for graphics rendering.
 					//Comment out if using one core.
+#define RENDER_BUFFER_LINES	8
+//--------------------------------------------------------------------------------------------------------
 ```
 ![Image](https://github.com/user-attachments/assets/a1d1e251-addf-43d6-b90f-d268907fe3f1)
 
