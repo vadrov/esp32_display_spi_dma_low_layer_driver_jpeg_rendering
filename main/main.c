@@ -2,7 +2,7 @@
  *  Author: VadRov
  *  Copyright (C) 2019-2024, VadRov, all right reserved.
  *
- *  ESP32 low layer driver for spi displays (esp-idf-v5.1.2)
+ *  ESP32 low layer driver for spi displays (esp-idf-v5.4)
  *  Optimized JPEG decoder.
  *  Demonstration of line-by-line graphics rendering running on two cpu cores.
  *
@@ -14,11 +14,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
+#include "esp_system.h"
+#include "esp_task_wdt.h"
+#include "esp_cpu.h"
+#include "esp_private/esp_clk.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
-#include "esp_system.h"
 #include "soc/spi_reg.h"
 #include "soc/spi_struct.h"
 #include "soc/gpio_struct.h"
@@ -29,51 +31,49 @@
 #include "soc/gpio_sig_map.h"
 #include "soc/dport_access.h"
 #include "driver/gpio.h"
-#include "esp_task_wdt.h"
-#include "esp_cpu.h"
-#include "esp_private/esp_clk.h"
+
+
+#define ST7789		0
+#define ILI9341		1
+
+/*--------------------------------------------- User defines ---------------------------------------------*/
+#define CS_PIN   		17	/* -1 if not used */
+#define DC_PIN   		21
+#define RST_PIN  		19
+#define BCKL_PIN 		5
+#define SPI_			SPI3 	/* SPI2 (GPIO13 -> MOSI, GPIO14 -> CLK)
+					   SPI3 (GPIO23 -> MOSI, GPIO18 -> CLK) */
+#define DMA_ch			1 	/* DMA channel 1 or 2, 0 - if DMA not used */
+
+#define ACT_DISPLAY		ST7789  /* ST7789 or ILI9341 */
+#define HI_SPEED			/* if uncommented f_clk spi = 80 MHz, else 40 MHz */
+
+#define RENDER_USE_TWO_CORES 	/* Use two esp32 cores for graphics rendering. Comment out if using one core.*/
+#define RENDER_BUFFER_LINES	8 
+/*--------------------------------------------------------------------------------------------------------*/
+
+/* 0...3, select in table:
+SPI mode		0		1		2		3
+polarity 	   low     low	   high    high
+phase	  	  1 edge  2 edge  1 edge  2 edge
+for st7789 - mode 2, for ili9341 - mode 0    */
 
 //display driver
 #include "display.h"
+#if ACT_DISPLAY == ST7789
+#define SPI_mode		2
 #include "st7789.h"
+#elif ACT_DISPLAY == ILI9341
+#define SPI_mode		0
 #include "ili9341.h"
+#endif
+
 //MicroGL2D library
 #include "microgl2d.h"
 //textures
 #include "textures.h"
 //jpeg decoder
 #include "jpeg_chan.h"
-
-#define ST7789		0
-#define ILI9341		1
-
-//--------------------------------------------- User defines ---------------------------------------------
-#define CS_PIN   		17		// -1 if not used
-#define DC_PIN   		21
-#define RST_PIN  		19
-#define BCKL_PIN 		5
-#define SPI_			SPI3 	//SPI2 (GPIO13 -> MOSI, GPIO14 -> CLK)
-					//SPI3 (GPIO23 -> MOSI, GPIO18 -> CLK)
-#define DMA_ch			1 	//DMA channel 1 or 2, 0 - if DMA not used
-
-#define ACT_DISPLAY		ST7789  //ST7789 or ILI9341
-#define HI_SPEED			//if uncommented f_clk spi = 80 MHz, else 40 MHz
-
-#define RENDER_USE_TWO_CORES 		//Use two esp32 cores for graphics rendering.
-					//Comment out if using one core.
-#define RENDER_BUFFER_LINES		8 
-//--------------------------------------------------------------------------------------------------------
-
-#if ACT_DISPLAY == ST7789
-//0...3, select in table:
-//SPI mode		0		1		2		3
-//polarity 	   low     low	   high    high
-//phase	  	  1 edge  2 edge  1 edge  2 edge
-//for st7789 - mode 2, for ili9341 - mode 0
-#define SPI_mode		2
-#elif ACT_DISPLAY == ILI9341
-#define SPI_mode		0
-#endif
 
 extern const uint8_t image1_jpg_start[] asm("_binary_image1_jpg_start");
 extern const uint8_t image1_jpg_end[] asm("_binary_image1_jpg_end");
@@ -192,9 +192,9 @@ void demo(void *par)
 	MGL_GradientAddColor(grad_fon, 100, 0x0000FF, 1);
 	MGL_OBJ *rect = MGL_ObjectAdd(0, MGL_OBJ_TYPE_FILLRECTANGLE);
 	MGL_SetRectangle(rect, 0, 0, lcd->Width-1, lcd->Height-1, COLOR_WHITE);
-	//MGL_ObjectSetGradient(rect, grad_fon);
-	MGL_TEXTURE texture_youtube = {(MGL_IMAGE *)&image_youtube, 0, 0/*MGL_TEXTURE_REPEAT_X | MGL_TEXTURE_REPEAT_Y*/};
-	MGL_ObjectSetTexture(rect, &texture_youtube);
+	MGL_ObjectSetGradient(rect, grad_fon);
+	//MGL_TEXTURE texture_youtube = {(MGL_IMAGE *)&image_youtube, 0, 0/*MGL_TEXTURE_REPEAT_X | MGL_TEXTURE_REPEAT_Y*/};
+	//MGL_ObjectSetTexture(rect, &texture_youtube);
 
 	//info window
 	MGL_OBJ *obj1 = MGL_ObjectAdd(rect, MGL_OBJ_TYPE_FILLRECTANGLE);
@@ -329,8 +329,8 @@ void demo(void *par)
 			((MGL_OBJ_RECTANGLE*)melnica->object)->y1 > lcd->Height - 90)
 			zz2 = -zz2;
 
-		//grad_fon->deg += 2;
-		texture_youtube.alpha += 2;
+		grad_fon->deg += 2;
+		//texture_youtube.alpha += 2;
 
 		counter++;
 
