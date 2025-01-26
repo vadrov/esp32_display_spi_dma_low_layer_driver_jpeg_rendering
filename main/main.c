@@ -29,7 +29,6 @@
 #include "soc/gpio_reg.h"
 #include "soc/dport_reg.h"
 #include "soc/gpio_sig_map.h"
-#include "soc/dport_access.h"
 #include "driver/gpio.h"
 
 
@@ -37,19 +36,19 @@
 #define ILI9341		1
 
 /*--------------------------------------------- User defines ---------------------------------------------*/
-#define CS_PIN   		17	/* -1 if not used */
+#define CS_PIN   		17		/* -1 if not used */
 #define DC_PIN   		21
 #define RST_PIN  		19
 #define BCKL_PIN 		5
 #define SPI_			SPI3 	/* SPI2 (GPIO13 -> MOSI, GPIO14 -> CLK)
-					   SPI3 (GPIO23 -> MOSI, GPIO18 -> CLK) */
-#define DMA_ch			1 	/* DMA channel 1 or 2, 0 - if DMA not used */
+								   SPI3 (GPIO23 -> MOSI, GPIO18 -> CLK) */
+#define DMA_ch			1 		/* DMA channel 1 or 2, 0 - if DMA not used */
 
 #define ACT_DISPLAY		ST7789  /* ST7789 or ILI9341 */
-#define HI_SPEED			/* if uncommented f_clk spi = 80 MHz, else 40 MHz */
+#define HI_SPEED				/* if uncommented f_clk spi = 80 MHz, else 40 MHz */
 
 #define RENDER_USE_TWO_CORES 	/* Use two esp32 cores for graphics rendering. Comment out if using one core.*/
-#define RENDER_BUFFER_LINES	8 
+#define RENDER_BUFFER_LINES		8 
 /*--------------------------------------------------------------------------------------------------------*/
 
 /* 0...3, select in table:
@@ -373,50 +372,58 @@ void demo(void *par)
 static int SPI_Init (spi_dev_t *spi, uint32_t spi_mode, uint32_t dma_channel)
 {
 	if (spi == &SPI3) { //Enabling SPI3 via IOMUX
-		DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI3_CLK_EN); //SPI3 clock enable
-    	DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI3_RST);  //SPI3 reset
+		*((volatile uint32_t *)DPORT_PERIP_CLK_EN_REG) |= DPORT_SPI3_CLK_EN; //SPI3 clock enable
+    	*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) |= DPORT_SPI3_RST;    //SPI3 reset up
+    	*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) &= ~DPORT_SPI3_RST;   //SPI3 reset down
     	//esp32 fast VSPI (SPI3) (up to 80 MHz), uses IOMUX (GPIO23 -> MOSI, GPIO18 - CLK)
     	//------------------------------ MOSI line (GPIO23) ----------------------------------
     	GPIO.func_in_sel_cfg[VSPID_IN_IDX].sig_in_sel = 0; //gpio pin via io_mux
     	//io_mux input enable, pull_up, strength default = 20mA, function 1 (spi)
-    	SET_PERI_REG_MASK(IO_MUX_GPIO23_REG, FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S));
+    	*((volatile uint32_t *)IO_MUX_GPIO23_REG) |= FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S);
     	GPIO.func_out_sel_cfg[23].oen_sel = 0; //use output enable signal from peripheral
     	GPIO.func_out_sel_cfg[23].oen_inv_sel = 0; //signal inversion -> disabled
     	//------------------------------ CLK line (GPIO18) ----------------------------------
     	GPIO.func_in_sel_cfg[VSPICLK_IN_IDX].sig_in_sel = 0;
-    	SET_PERI_REG_MASK(IO_MUX_GPIO18_REG, FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S)); //FUN = 1 (spi)
+    	*((volatile uint32_t *)IO_MUX_GPIO18_REG) |= FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S); //FUN = 1 (spi)
     	GPIO.func_out_sel_cfg[18].oen_sel = 0;
     	GPIO.func_out_sel_cfg[18].oen_inv_sel = 0;
     	if (dma_channel) {
-    		//SPI_DMA clock enable
-    		DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI_DMA_CLK_EN);
-    		//SPI_DMA reset
-    		DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI_DMA_RST);
+    		*((volatile uint32_t *)DPORT_PERIP_CLK_EN_REG) |= DPORT_SPI_DMA_CLK_EN; //SPI_DMA clock enable
+    		*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) |= DPORT_SPI_DMA_RST;    //SPI_DMA reset up
+    		*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) &= ~DPORT_SPI_DMA_RST;   //SPI_DMA reset down
 			//Set DMA channel for SPI
-   			DPORT_SET_PERI_REG_BITS(DPORT_SPI_DMA_CHAN_SEL_REG, DPORT_SPI3_DMA_CHAN_SEL_V, dma_channel, DPORT_SPI3_DMA_CHAN_SEL_S);
+			uint32_t tmp = *((volatile uint32_t *)DPORT_SPI_DMA_CHAN_SEL_REG);
+			tmp &= ~(DPORT_SPI3_DMA_CHAN_SEL_V << DPORT_SPI3_DMA_CHAN_SEL_S);
+			tmp |= dma_channel << DPORT_SPI3_DMA_CHAN_SEL_S;
+			*((volatile uint32_t *)DPORT_SPI_DMA_CHAN_SEL_REG) = tmp;
    			//Adding an interrupt handler, disabling all interrupts, clearing interrupt status flags.
    			esp_intr_alloc(ETS_SPI3_INTR_SOURCE, ESP_INTR_FLAG_LOWMED, LCD_TC_Callback, (void*)&SPI3, NULL);
    			SPI3.slave.val &= ~0x3ff;
     	}
 	}
 	else if (spi == &SPI2) { //Enabling SPI3 via IOMUX
-		DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI2_CLK_EN);
-		DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI2_RST);
+		*((volatile uint32_t *)DPORT_PERIP_CLK_EN_REG) |= DPORT_SPI2_CLK_EN;
+    	*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) |= DPORT_SPI2_RST;
+    	*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) &= ~DPORT_SPI2_RST;
 		//esp32 fast HSPI (SPI2) (up to 80 MHz), uses IOMUX (GPIO13 -> MOSI, GPIO14 - CLK)
 		//------------------------------ MOSI line (GPIO13) ----------------------------------
 		GPIO.func_in_sel_cfg[HSPID_IN_IDX].sig_in_sel = 0;
-		SET_PERI_REG_MASK(IO_MUX_GPIO13_REG, FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S));
+		*((volatile uint32_t *)IO_MUX_GPIO13_REG) |= FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S);
 		GPIO.func_out_sel_cfg[13].oen_sel = 0;
 		GPIO.func_out_sel_cfg[13].oen_inv_sel = 0;
 		//------------------------------ CLK line (GPIO14) ----------------------------------
 		GPIO.func_in_sel_cfg[HSPICLK_IN_IDX].sig_in_sel = 0;
-		SET_PERI_REG_MASK(IO_MUX_GPIO14_REG, FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S));
+		*((volatile uint32_t *)IO_MUX_GPIO14_REG) |= FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (1 << MCU_SEL_S);
 		GPIO.func_out_sel_cfg[14].oen_sel = 0;
 		GPIO.func_out_sel_cfg[14].oen_inv_sel = 0;
 		if (dma_channel) {
-			DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI_DMA_CLK_EN);
-			DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI_DMA_RST);
-			DPORT_SET_PERI_REG_BITS(DPORT_SPI_DMA_CHAN_SEL_REG, DPORT_SPI2_DMA_CHAN_SEL_V, dma_channel, DPORT_SPI2_DMA_CHAN_SEL_S);
+    		*((volatile uint32_t *)DPORT_PERIP_CLK_EN_REG) |= DPORT_SPI_DMA_CLK_EN;
+    		*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) |= DPORT_SPI_DMA_RST;
+    		*((volatile uint32_t *)DPORT_PERIP_RST_EN_REG) &= ~DPORT_SPI_DMA_RST;
+			uint32_t tmp = *((volatile uint32_t *)DPORT_SPI_DMA_CHAN_SEL_REG);
+			tmp &= ~(DPORT_SPI2_DMA_CHAN_SEL_V << DPORT_SPI2_DMA_CHAN_SEL_S);
+			tmp |= dma_channel << DPORT_SPI2_DMA_CHAN_SEL_S;
+			*((volatile uint32_t *)DPORT_SPI_DMA_CHAN_SEL_REG) = tmp;
 			esp_intr_alloc(ETS_SPI2_INTR_SOURCE, ESP_INTR_FLAG_LOWMED, LCD_TC_Callback, (void*)&SPI2, NULL);
 			SPI2.slave.val &= ~0x3ff;
 		}
@@ -476,7 +483,7 @@ static void pin_output_iomux_init(int pin_num, uint32_t level)
 		GPIO.enable1_w1ts.data = 1UL << (pin_num - 32);
 	}
 	//pull up, fuction = 2 (gpio), strenght = default (20 ma)
-	SET_PERI_REG_MASK(GPIO_PIN_MUX_REG[pin_num], FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (2 << MCU_SEL_S));
+	*((volatile uint32_t *)GPIO_PIN_MUX_REG[pin_num]) |= FUN_IE | FUN_PU | (2 << FUN_DRV_S) | (2 << MCU_SEL_S);
 	GPIO.func_out_sel_cfg[pin_num].oen_sel = 0;
 	GPIO.func_out_sel_cfg[pin_num].oen_inv_sel = 0;
 	if (level) {
@@ -594,9 +601,9 @@ void app_main(void)
 	demo2(lcd);
 
 	//graphic rendering
-	render_buf1 = heap_caps_malloc(RENDER_BUFFER_LINES * lcd->Width * sizeof(uint16_t), MALLOC_CAP_DMA);
+	render_buf1 = (uint16_t*)heap_caps_malloc(RENDER_BUFFER_LINES * lcd->Width * sizeof(uint16_t), MALLOC_CAP_DMA);
 	if (lcd->spi_data.dma_channel) {
-		render_buf2 = heap_caps_malloc(RENDER_BUFFER_LINES * lcd->Width * sizeof(uint16_t), MALLOC_CAP_DMA);
+		render_buf2 = (uint16_t*)heap_caps_malloc(RENDER_BUFFER_LINES * lcd->Width * sizeof(uint16_t), MALLOC_CAP_DMA);
 	}
 	xTaskCreatePinnedToCore(demo, "render_task", 8192, (void*)lcd, 4, NULL, 1);
 }
